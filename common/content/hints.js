@@ -370,6 +370,9 @@ var HintSession = Class("HintSession", CommandMode, {
                 hint.span.setAttribute("style", ["display: none; left:", leftPos, "px; top:", topPos, "px"].join(""));
                 container.appendChild(hint.span);
 
+                if (!options["showhinttext"]) {
+                    hint.showText = false;
+                }
                 this.pageHints.push(hint);
             }
 
@@ -1359,11 +1362,16 @@ var Hints = Module("hints", {
                 validator: DOM.validateMatcher
             });
 
+        options.add(["showhinttext"],
+            "Enables or disables showing hints' related texts",
+            // Make sure to update the docs when you change this.
+            "boolean", true);
+
         options.add(["hinttags", "ht"],
             "XPath or CSS selector strings of hintable elements for Hints mode",
             // Make sure to update the docs when you change this.
             "stringlist", ":-moz-any-link,area,button,iframe,input:not([type=hidden]):not([disabled])," +
-                          "label[for],select,textarea," +
+                          "label[for],select,textarea,summary," +
                           "[onclick],[onmouseover],[onmousedown],[onmouseup],[oncommand]," +
                           "[tabindex],[role=link],[role=button],[contenteditable=true]",
             {

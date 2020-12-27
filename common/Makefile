@@ -19,15 +19,9 @@ OS            = $(shell uname -s)
 BUILD_DATE    = $(shell date "+%Y/%m/%d %H:%M:%S")
 BASE          = $(TOP)/../common
 VERSION	     ?= $(shell $(SED) -n 's/.*em:version(>|=")(.*)["<].*/\2/p' $(TOP)/install.rdf | sed 1q)
-UUID   	     := $(shell $(SED) -n 's/.*em:id(>|=")(.*)["<].*/\2/p' $(TOP)/install.rdf | sed 1q)
+UUID	     := $(shell $(SED) -n 's/.*em:id(>|=")(.*)["<].*/\2/p' $(TOP)/install.rdf | sed 1q)
 MANGLE	     := chrome
-MOZMILL       = mozmill
-HOSTAPP_PATH  = $(shell which $(HOSTAPP))
-TEST_DIR      = $(BASE)/tests/functional
-TEST_LOG      = $(TEST_DIR)/log
-
 IDNAME       := $(shell echo "$(NAME)" | tr a-z A-Z)
-
 LOCALEDIR     = locale
 DOC_FILES     = $(wildcard $(LOCALEDIR)/*/*.xml)
 
@@ -60,7 +54,7 @@ BUILD_DIR     = build.$(VERSION).$(OS)
 
 #### rules
 
-TARGETS = all help info jar xpi install clean distclean install installxpi test $(CHROME) $(JAR)
+TARGETS = all help info jar xpi install clean distclean install installxpi $(CHROME) $(JAR)
 $(TARGETS:%=\%.%):
 	echo MAKE $* $(@:$*.%=%)
 	$(MAKE) -C $* $(@:$*.%=%)
@@ -81,7 +75,6 @@ help:
 	@echo '                    to change the directory where profiles are searched'
 	@echo "  make clean      - clean up"
 	@echo "  make distclean  - clean up more"
-	@echo "  make test       - run functional tests"
 	@echo
 	@echo "running some commands with V=1 will show more build details"
 
@@ -145,11 +138,6 @@ distclean:
 	@echo "More $(NAME) cleanup..."
 	rm -rf $(BUILD_DIR)
 
-test: xpi
-	@echo "Running $(NAME) functional tests..."
-	$(IDNAME)_INIT="set loadplugins=" \
-		$(MOZMILL) --show-all -l $(TEST_LOG) -b $(HOSTAPP_PATH) --addons $(XPI) -t $(TEST_DIR)
-
 #### xpi
 
 xpi: $(CHROME)
@@ -164,28 +152,13 @@ xpi: $(CHROME)
 	       -f $(BASE)/process_config.awk \
 	       "$(TOP)/config.json" >"$(XPI_PATH)/config.json"
 
-	version="$(VERSION)"; 			\
-	hg root >/dev/null 2>&1 && 		\
-	case "$$version" in			\
-	*pre) version="$$version-hg$$(hg log -r . --template '{rev}')-$$(hg branch)";; \
-	esac; 					\
-	$(SED) -e 's/(em:version(>|="))([^"<]+)/\1'"$$version/" \
+	$(SED) -e 's/(em:version(>|="))([^"<]+)/\1$(VERSION)/' \
 		<"$(TOP)/install.rdf" >"$(XPI_PATH)/install.rdf"
 
 	$(MAKE_JAR) "$(XPI)" "$(XPI_BASES)" "$(XPI_DIRS)" "$(XPI_TEXTS)" "$(XPI_BINS)" "$(XPI_FILES)"
 	rm -r -- $(CHROME)
 
-	@if ! which realpath >/dev/null 2>&1; \
-	then realpath() { 		\
-		local IFS="$$(echo)";	\
-		local x="$$1"; 		\
-		case "$$x" in		\
-		/*) ;;			\
-		*) x=$$(pwd);;		\
-		esac;			\
-	};				\
-	fi;				\
-	echo "Built XPI: $$(realpath -s -- $(XPI))"
+	echo "Built XPI: $(shell realpath -s -- $(XPI))"
 
 #### jar
 
@@ -193,4 +166,3 @@ $(CHROME) $(JAR):
 	@echo "Packaging chrome..."
 	$(MAKE_JAR) -r "$(@)" "$(JAR_BASES)" "$(JAR_DIRS)" "$(JAR_TEXTS)" "$(JAR_BINS)" "$(JAR_FILES)"
 	@echo "SUCCESS: $@"
-
