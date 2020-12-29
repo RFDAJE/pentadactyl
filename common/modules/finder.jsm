@@ -488,19 +488,20 @@ var RangeFind = Class("RangeFind", {
         else {
             this.selections = [];
             let string = this.lastString;
-            //for (let r of this.iter(string)) {
-            //    let controller = this.range.selectionController;
-            //    for (let node = r.startContainer; node; node = node.parentNode)
-            //        if (node instanceof Ci.nsIDOMNSEditableElement) {
-            //            controller = node.editor.selectionController;
-            //            break;
-            //        }
+            for (let r of this.iter(string)) {
+                let that = this;
+                let controller = this.range.selectionController;
+                for (let node = r.startContainer; node; node = node.parentNode)
+                    if (node instanceof Ci.nsIDOMNSEditableElement) {
+                        controller = node.editor.selectionController;
+                        break;
+                    }
 
-            //    let sel = controller.getSelection(Ci.nsISelectionController.SELECTION_FIND);
-            //    sel.addRange(r);
-            //    if (this.selections.indexOf(sel) < 0)
-            //        this.selections.push(sel);
-            //}
+                let sel = controller.getSelection(Ci.nsISelectionController.SELECTION_FIND);
+                sel.addRange(r);
+                if (this.selections.indexOf(sel) < 0)
+                    this.selections.push(sel);
+            }
             this.highlighted = this.lastString;
             if (this.lastRange)
                 this.selectedRange = this.lastRange;
@@ -669,9 +670,22 @@ var RangeFind = Class("RangeFind", {
                 }
                 this.range = this.ranges[i];
 
-                let start = RangeFind.sameDocument(this.lastRange, this.range.range) && this.range.intersects(this.lastRange) ?
-                                RangeFind.endpoint(this.lastRange, !(again ^ this.backward)) :
-                                RangeFind.endpoint(this.range.range, !this.backward);
+                let is_same_doc = RangeFind.sameDocument(
+                        this.lastRange, this.range.range);
+                let is_intersected = this.range.intersects(this.lastRange);
+                let start = null;
+                if (is_same_doc && is_intersected) {
+                    start = RangeFind.endpoint(
+                                this.lastRange, !(again ^ this.backward));
+                } else {
+                    if (this.range == null || this.lastRange == null) {
+                        start = RangeFind.endpoint(
+                                this.range.range, !this.backward);
+                    } else {
+                        start = RangeFind.endpoint(
+                                this.lastRange, this.backward);
+                    }
+                }
 
                 if (this.backward && !again)
                     start = RangeFind.endpoint(this.startRange, false);
